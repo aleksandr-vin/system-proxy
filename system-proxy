@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+#
+# Script for enabling/disabling system proxies
+#
+# -*- mode: shell-script -*-
+#
+set -e
+
+# networksetup -listallnetworkservices
+SERVICE="${NETWORK_SERVICE:-USB 10/100/1000 LAN}"
+
+echo -n "Checking service ${SERVICE} ... "
+networksetup -listallnetworkservices | grep "${SERVICE}" >/dev/null && echo ok || echo fail
+
+set_proxies() {
+    for name in $(cat <<EOF
+            ftp
+            web
+            secureweb
+            streaming
+            gopher
+            socksfirewall
+EOF
+                 )
+    do
+        (set -x ; networksetup -set${name}proxystate "${SERVICE}" $1)
+    done
+}
+
+case "$*" in
+    on)
+        set_proxies On
+        ;;
+    off)
+        set_proxies Off
+        ;;
+    *)
+        echo 'Specify "on" or "off" argument' >&2
+        exit 1
+        ;;
+esac
+
+echo "done"
