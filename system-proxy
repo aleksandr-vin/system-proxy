@@ -7,34 +7,47 @@
 set -e
 
 # networksetup -listallnetworkservices
-SERVICE="${NETWORK_SERVICE:-USB 10/100/1000 LAN}"
+SERVICES=(
+    'USB 10/100/1000 LAN'
+    'Wi-Fi'
+)
 
-(echo -n "Checking service ${SERVICE} ... "
- networksetup -listallnetworkservices | grep "${SERVICE}" >/dev/null && echo ok || echo fail) >&2
+for i in ${!SERVICES[@]}
+do
+    SERVICE="${SERVICES[$i]}"
+    (echo -n "Checking service ${SERVICE} ... "
+     networksetup -listallnetworkservices | grep "${SERVICE}" >/dev/null && echo ok || echo fail) >&2
+done
 
-types=$(cat <<EOF
-            ftp
-            web
-            secureweb
-            streaming
-            gopher
-            socksfirewall
-EOF
-     )
+types=(
+    ftp
+    web
+    secureweb
+    streaming
+    gopher
+    socksfirewall
+)
 
 set_proxies() {
-    for name in $types
+    for name in ${types[@]}
     do
-        (set -x ; networksetup -set${name}proxystate "${SERVICE}" ${2})
+        for i in ${!SERVICES[@]}
+        do
+            SERVICE="${SERVICES[$i]}"
+            (set -x ; networksetup -set${name}proxystate "${SERVICE}" ${2})
+        done
     done
 }
 
 get_proxies_status() {
-    (
-     for name in $types
-    do
-        (set -x ; networksetup -get${name}proxy "${SERVICE}") | grep -E '^Enabled: '
-    done | sort -u)
+    (for name in ${types[@]}
+     do
+         for i in ${!SERVICES[@]}
+         do
+             SERVICE="${SERVICES[$i]}"
+             (set -x ; networksetup -get${name}proxy "${SERVICE}") | grep -E '^Enabled: '
+         done
+     done | sort -u)
 }
 
 case "$*" in
